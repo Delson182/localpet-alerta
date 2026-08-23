@@ -493,6 +493,33 @@ def criar_mapa_cadastro(
         control_scale=True,
     )
 
+    # Mira fixa no centro do mapa.
+    # Útil principalmente no celular: mova o mapa e confirme
+    # o ponto usando o botão abaixo dele.
+    mira_html = """
+    <div style="
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 9999;
+        pointer-events: none;
+        font-size: 36px;
+        line-height: 36px;
+        color: #d32f2f;
+        font-weight: 700;
+        text-shadow:
+            -1px -1px 0 #ffffff,
+             1px -1px 0 #ffffff,
+            -1px  1px 0 #ffffff,
+             1px  1px 0 #ffffff;
+    ">⊕</div>
+    """
+
+    mapa.get_root().html.add_child(
+        folium.Element(mira_html)
+    )
+
     # Mostra também todas as ocorrências já cadastradas.
     pontos_salvos = df.dropna(
         subset=["latitude", "longitude"]
@@ -1080,8 +1107,9 @@ with aba_cadastro:
 
     st.caption(
         "As ocorrências já cadastradas aparecem no mapa. "
-        "Clique em qualquer local vazio para definir ou corrigir "
-        "o ponto da nova ocorrência."
+        "No computador, clique no local desejado. "
+        "No celular, mova o mapa até posicionar a mira vermelha "
+        "sobre o local da ocorrência."
     )
 
     mapa_cadastro = criar_mapa_cadastro(
@@ -1108,14 +1136,55 @@ with aba_cadastro:
         width=None,
         height=470,
         returned_objects=[
-            "last_clicked"
+            "last_clicked",
+            "center",
+            "zoom",
         ],
         key="mapa_cadastro",
     )
 
+    # Mantém no estado a última posição visual do mapa.
+    # Isso é importante no celular, pois o usuário normalmente
+    # arrasta o mapa em vez de clicar em um ponto.
+    centro_mapa = retorno_cadastro.get("center")
+    zoom_mapa = retorno_cadastro.get("zoom")
+
+    if centro_mapa:
+        st.session_state["cad_centro_lat"] = float(
+            centro_mapa["lat"]
+        )
+        st.session_state["cad_centro_lon"] = float(
+            centro_mapa["lng"]
+        )
+
+    if zoom_mapa is not None:
+        st.session_state["cad_zoom"] = int(
+            zoom_mapa
+        )
+
+    # No computador, o clique direto continua funcionando.
     if atualizar_ponto_por_clique(
         retorno_cadastro
     ):
+        st.rerun()
+
+    st.caption(
+        "📱 No celular: arraste o mapa até deixar a mira vermelha "
+        "exatamente sobre o local e toque no botão abaixo."
+    )
+
+    if st.button(
+        "📍 Marcar local da mira",
+        use_container_width=True,
+        key="btn_marcar_centro",
+    ):
+        definir_ponto_cadastro(
+            st.session_state["cad_centro_lat"],
+            st.session_state["cad_centro_lon"],
+            origem="Ponto confirmado pela mira do mapa",
+            zoom=st.session_state["cad_zoom"],
+        )
+
         st.rerun()
 
     ponto_lat = st.session_state[
@@ -1149,7 +1218,8 @@ with aba_cadastro:
     else:
         st.info(
             "Nenhum ponto definido. "
-            "Use CEP, endereço, GPS ou clique no mapa."
+            "Use CEP, endereço, GPS, clique no mapa no computador "
+            "ou posicione a mira e confirme no celular."
         )
 
     # -----------------------------------------------------
