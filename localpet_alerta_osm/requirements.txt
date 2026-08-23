@@ -3,3 +3,5 @@ pandas
 requests
 folium
 streamlit-folium
+SQLAlchemy
+psycopg2-binary
