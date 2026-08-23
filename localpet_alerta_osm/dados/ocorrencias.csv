@@ -1,0 +1,2 @@
+﻿id,data_registro,especie,situacao,cep,endereco_informado,endereco_formatado,descricao,latitude,longitude,status
+1,2026-08-22 23:03:02,Cachorro,Animal perdido,79210000,Ponto marcado manualmente no mapa,"Rua Acôgo, Vila Maior, Anastácio, Mato Grosso do Sul, Região Centro-Oeste, 79210-000, Brasil",Cachorro Caramelo,-20.482140052317973,-55.81483840942384,Reencontrado

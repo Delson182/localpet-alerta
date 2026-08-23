@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+
+<style>
+html, body {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    font-family: -apple-system, BlinkMacSystemFont,
+        "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+button {
+    width: 100%;
+    min-height: 38px;
+    padding: 0 12px;
+    border: 1px solid rgba(49, 51, 63, 0.25);
+    border-radius: 8px;
+    background: white;
+    color: rgb(49, 51, 63);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+button:hover {
+    border-color: #ff4b4b;
+    color: #ff4b4b;
+}
+
+button:disabled {
+    opacity: 0.65;
+    cursor: wait;
+}
+</style>
+</head>
+
+<body>
+
+<button id="geo" type="button">
+📍 Usar minha localização
+</button>
+
+<script>
+const button = document.getElementById("geo");
+
+function send(type, data = {}) {
+    window.parent.postMessage(
+        {
+            isStreamlitMessage: true,
+            type: type,
+            ...data
+        },
+        "*"
+    );
+}
+
+function ready() {
+    send(
+        "streamlit:componentReady",
+        {apiVersion: 1}
+    );
+
+    send(
+        "streamlit:setFrameHeight",
+        {height: 42}
+    );
+}
+
+function setValue(value) {
+    send(
+        "streamlit:setComponentValue",
+        {value: value}
+    );
+}
+
+window.addEventListener(
+    "message",
+    function(event) {
+        const data = event.data;
+
+        if (
+            !data
+            || data.type !== "streamlit:render"
+        ) {
+            return;
+        }
+
+        const args = data.args || {};
+
+        if (args.label) {
+            button.textContent = args.label;
+        }
+    }
+);
+
+button.addEventListener(
+    "click",
+    function() {
+        if (!navigator.geolocation) {
+            setValue({
+                error: {
+                    code: 0,
+                    message:
+                        "Geolocalização não disponível neste navegador."
+                }
+            });
+
+            return;
+        }
+
+        button.disabled = true;
+        button.textContent =
+            "📍 Obtendo localização...";
+
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                setValue({
+                    latitude:
+                        position.coords.latitude,
+                    longitude:
+                        position.coords.longitude,
+                    accuracy:
+                        position.coords.accuracy
+                });
+
+                button.disabled = false;
+                button.textContent =
+                    "✓ Localização obtida";
+            },
+
+            function(error) {
+                setValue({
+                    error: {
+                        code: error.code,
+                        message: error.message
+                    }
+                });
+
+                button.disabled = false;
+                button.textContent =
+                    "📍 Usar minha localização";
+            },
+
+            {
+                enableHighAccuracy: true,
+                timeout: 15000,
+                maximumAge: 30000
+            }
+        );
+    }
+);
+
+ready();
+</script>
+
+</body>
+</html>
